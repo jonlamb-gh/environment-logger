@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+set -e
+
+cargo flash --release --chip STM32F411CEUx --target thumbv7em-none-eabihf
+
+exit 0
