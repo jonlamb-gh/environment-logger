@@ -15,7 +15,9 @@ use ssd1306::I2CDisplayInterface;
 
 mod alarm;
 mod display;
+mod rtc;
 
+// TODO - top level error and log/panic handling
 #[entry]
 fn main() -> ! {
     let dp = stm32::Peripherals::take().expect("Failed to take stm32::Peripherals");

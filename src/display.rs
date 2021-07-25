@@ -24,10 +24,7 @@ const MONTHS: [&str; 12] = [
     "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
-pub struct Display<DI>
-where
-    DI: WriteOnlyDataCommand,
-{
+pub struct Display<DI> {
     drv: Ssd1306<DI, DispSize, BufferedGraphicsMode<DispSize>>,
     line_buf: String<LINE_BUF_CAP>,
 }

@@ -1,9 +1,6 @@
 use crate::hal::hal::PwmPin;
 
-pub struct Alarm<PWM>
-where
-    PWM: PwmPin<Duty = u16>,
-{
+pub struct Alarm<PWM> {
     pwm: PWM,
 }
 
