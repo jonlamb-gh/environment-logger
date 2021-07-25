@@ -1,3 +1,4 @@
+// TODO
 //#![deny(unsafe_code, warnings, clippy::all)]
 #![no_main]
 #![no_std]
@@ -5,12 +6,14 @@
 use panic_abort as _;
 use stm32f4xx_hal as hal;
 
+use crate::alarm::Alarm;
 use crate::display::Display;
-use crate::hal::{i2c::I2c, prelude::*, stm32};
+use crate::hal::{i2c::I2c, prelude::*, pwm, stm32};
 use cortex_m_rt::{entry, exception, ExceptionFrame};
 use ds323x::{NaiveDate, NaiveDateTime};
 use ssd1306::I2CDisplayInterface;
 
+mod alarm;
 mod display;
 
 #[entry]
@@ -22,12 +25,18 @@ fn main() -> ! {
     let rcc = dp.RCC.constrain();
     let clocks = rcc.cfgr.sysclk(100.mhz()).freeze();
 
+    let gpioa = dp.GPIOA.split();
     let gpiob = dp.GPIOB.split();
     let gpioc = dp.GPIOC.split();
 
     // LED on PC13
     let mut led = gpioc.pc13.into_push_pull_output();
     led.set_high().unwrap();
+
+    // Alarm buzzer, PA10, PWM on T1_CH3
+    let pwm_channels = gpioa.pa10.into_alternate_af1();
+    let buzzer = pwm::tim1(dp.TIM1, pwm_channels, clocks, 5_u32.khz());
+    let mut alarm = Alarm::new(buzzer);
 
     // I2C1, SSD1306 display
     // PB6, SCL1
@@ -42,6 +51,11 @@ fn main() -> ! {
 
     let dt: NaiveDateTime = NaiveDate::from_ymd(2021, 7, 25).and_hms(5, 42, 11);
 
+    // Short beep on power up
+    alarm.enable();
+    delay.delay_ms(200_u32);
+    alarm.disable();
+
     // TODO - timer, switch display modes every ~5sec
     let mut temp: f32 = 0.0;
     let mut humid: f32 = 0.0;
@@ -49,7 +63,13 @@ fn main() -> ! {
         led.toggle().unwrap();
 
         temp += 10.1;
+        if temp > 100.0 {
+            temp = 0.0;
+        }
         humid += 5.1;
+        if humid > 100.0 {
+            humid = 0.0;
+        }
         display.draw_sensor_readings(temp, humid).unwrap();
         delay.delay_ms(3000_u32);
 

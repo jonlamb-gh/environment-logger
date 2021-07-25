@@ -18,3 +18,21 @@ cargo install cargo-flash probe-run
 * [Adafruit BME680 Sensor](https://www.adafruit.com/product/3660)
 * [Adafruit Micro SD Card Breakout Board](https://www.adafruit.com/product/4682)
 * [Adafruit DS3231 RTC](https://www.adafruit.com/product/3013)
+* [Piezo buzzer, 5 kHz square wave](https://www.amazon.com/gp/product/B085XQM69Z/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1)
+
+### Pins
+
+| Description       | GPIO  | AF    |
+| :---              | :--:  | :--:  |
+| SSD1306 I2C       | PB6   | SCL1  |
+| SSD1306 I2C       | PB7   | SDA1  |
+| BME680 I2C        | PB10  | SCL2  |
+| BME680 I2C        | PB3   | SDA2  |
+| DS3231 I2C        | PA8   | SCL3  |
+| DS3231 I2C        | PB4   | SDA3  |
+| SD SPI            | PA15  | NSS1  |
+| SD SPI            | PA5   | SCK1  |
+| SD SPI            | PA6   | MISO1 |
+| SD SPI            | PA7   | MOSI1 |
+| SD DET            | PC15  | DIN   |
+| Buzzer            | PA10  | DOUT, T1_CH3  |

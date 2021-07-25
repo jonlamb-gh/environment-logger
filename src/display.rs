@@ -20,7 +20,7 @@ const DATETIME_FONT: MonoFont<'_> = fonts::FONT_10X20;
 
 const LINE_BUF_CAP: usize = 64;
 
-const MONTHS: [&'static str; 12] = [
+const MONTHS: [&str; 12] = [
     "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
