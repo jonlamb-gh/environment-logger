@@ -159,6 +159,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "ds323x"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3e5a979b9d031d592c91305b3d4f7bf6a2c1338231f1be54caa43646972b6b04"
+dependencies = [
+ "embedded-hal",
+ "rtcc",
+]
+
+[[package]]
 name = "embedded-dma"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -220,6 +230,7 @@ dependencies = [
  "cortex-m",
  "cortex-m-rt",
  "display-interface",
+ "ds323x",
  "embedded-graphics",
  "embedded-hal",
  "embedded-sdmmc",

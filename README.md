@@ -1,5 +1,7 @@
 # environment-logger
 
+Displays and optionally logs data from a BME680 sensor to an SD card.
+
 ## Dependencies
 
 ```bash
@@ -13,6 +15,6 @@ cargo install cargo-flash probe-run
   - [STM32F411CEU6 refman](https://www.st.com/resource/en/reference_manual/dm00119316-stm32f411xc-e-advanced-arm-based-32-bit-mcus-stmicroelectronics.pdf)
   - [datasheet](https://www.st.com/resource/en/datasheet/stm32f411ce.pdf)
 * [SSD1306 128x32 OLED Display Module](https://www.amazon.com/gp/product/B0761LV1SD/ref=ppx_yo_dt_b_asin_title_o00_s00?ie=UTF8&psc=1)
-* [Adafruit BME680](https://www.adafruit.com/product/3660)
+* [Adafruit BME680 Sensor](https://www.adafruit.com/product/3660)
 * [Adafruit Micro SD Card Breakout Board](https://www.adafruit.com/product/4682)
-* [Adafruit PCF8523 Real Time Clock](https://www.adafruit.com/product/3295)
+* [Adafruit DS3231 RTC](https://www.adafruit.com/product/3013)

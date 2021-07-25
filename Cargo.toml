@@ -16,6 +16,7 @@ ssd1306 = "0.7"
 display-interface = "0.4"
 bme680 = "0.6"
 embedded-sdmmc = "0.3"
+ds323x = "0.4"
 
 [dependencies.stm32f4xx-hal]
 version = "0.9"

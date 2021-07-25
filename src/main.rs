@@ -8,6 +8,7 @@ use stm32f4xx_hal as hal;
 use crate::display::Display;
 use crate::hal::{i2c::I2c, prelude::*, stm32};
 use cortex_m_rt::{entry, exception, ExceptionFrame};
+use ds323x::{NaiveDate, NaiveDateTime};
 use ssd1306::I2CDisplayInterface;
 
 mod display;
@@ -39,6 +40,9 @@ fn main() -> ! {
 
     let mut delay = hal::delay::Delay::new(cp.SYST, clocks);
 
+    let dt: NaiveDateTime = NaiveDate::from_ymd(2021, 7, 25).and_hms(5, 42, 11);
+
+    // TODO - timer, switch display modes every ~5sec
     let mut temp: f32 = 0.0;
     let mut humid: f32 = 0.0;
     loop {
@@ -46,10 +50,14 @@ fn main() -> ! {
 
         temp += 10.1;
         humid += 5.1;
-
         display.draw_sensor_readings(temp, humid).unwrap();
+        delay.delay_ms(3000_u32);
 
-        delay.delay_ms(1000_u32);
+        display.draw_date(&dt.date()).unwrap();
+        delay.delay_ms(3000_u32);
+
+        display.draw_time(&dt.time()).unwrap();
+        delay.delay_ms(3000_u32);
     }
 }
 
