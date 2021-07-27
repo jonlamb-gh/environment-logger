@@ -1,6 +1,3 @@
-// TODO pick fonts
-// https://docs.rs/embedded-graphics/0.7.1/embedded_graphics/mono_font/index.html
-
 use core::fmt::Write;
 use display_interface::DisplayError;
 use ds323x::{Datelike, NaiveDate, NaiveTime, Timelike};
@@ -15,14 +12,40 @@ use ssd1306::{mode::BufferedGraphicsMode, prelude::*, Ssd1306};
 
 type DispSize = DisplaySize128x32;
 
-const SENSOR_READING_FONT: MonoFont<'_> = fonts::FONT_9X15_BOLD;
-const DATETIME_FONT: MonoFont<'_> = fonts::FONT_10X20;
+//const SENSOR_READING_FONT: MonoFont<'_> = fonts::FONT_9X15_BOLD;
+//const DATETIME_FONT: MonoFont<'_> = fonts::FONT_10X20;
+const SENSOR_READING_FONT: MonoFont<'_> = profont::PROFONT_14_POINT;
+const DATETIME_FONT: MonoFont<'_> = profont::PROFONT_24_POINT;
 
 const LINE_BUF_CAP: usize = 64;
 
 const MONTHS: [&str; 12] = [
     "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
+
+// TODO - (maybe optional) error/status view mode, or just global struct details
+// along the bottom of the display
+// uptime, io/fs error, fs record count, alarm on
+//
+// maybe combine Time and Date, make date a smaller font
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub enum ViewMode {
+    Time,
+    Date,
+    SensorReadings,
+}
+
+impl Default for ViewMode {
+    fn default() -> Self {
+        ViewMode::Time
+    }
+}
+
+pub enum View<'a> {
+    Time { time: &'a NaiveTime },
+    Date { date: &'a NaiveDate },
+    SensorReadings { data: &'a bme680::FieldData },
+}
 
 pub struct Display<DI> {
     drv: Ssd1306<DI, DispSize, BufferedGraphicsMode<DispSize>>,
@@ -48,8 +71,8 @@ where
     }
 
     pub fn draw_sensor_readings(&mut self, temp: f32, humid: f32) -> Result<(), DisplayError> {
-        let temp = temp.clamp(0.0, 100.0);
-        let humid = humid.clamp(0.0, 100.0);
+        let temp = temp.clamp(0.0, 99.0);
+        let humid = humid.clamp(0.0, 99.0);
 
         let text_style = MonoTextStyleBuilder::new()
             .font(&SENSOR_READING_FONT)
@@ -61,7 +84,7 @@ where
         self.drv.clear();
 
         self.line_buf.clear();
-        write!(&mut self.line_buf, "Temp   {:.1} F", temp)
+        write!(&mut self.line_buf, "Temp   {:02.0} F", temp)
             .map_err(|_| DisplayError::InvalidFormatError)?;
         Text::with_baseline(
             self.line_buf.as_str(),
@@ -72,7 +95,7 @@ where
         .draw(&mut self.drv)?;
 
         self.line_buf.clear();
-        write!(&mut self.line_buf, "Humid  {:.1} %", humid)
+        write!(&mut self.line_buf, "Humid  {:02.0} %", humid)
             .map_err(|_| DisplayError::InvalidFormatError)?;
         Text::with_baseline(
             self.line_buf.as_str(),
@@ -128,10 +151,11 @@ where
 
         self.drv.clear();
 
+        // TODO - overflows the screen a little with the current font size
         self.line_buf.clear();
         write!(
             &mut self.line_buf,
-            "   {:02}:{:02} {}",
+            "{:02}:{:02} {}",
             hour,
             time.minute(),
             if is_pm { "PM" } else { "AM" },
