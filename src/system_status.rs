@@ -1,6 +1,8 @@
+use crate::alarm::AlarmStatus;
+
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default)]
 pub struct SystemStatus {
-    pub alarm_on: bool,
+    pub alarm: AlarmStatus,
     pub storage_connected: bool,
     pub storage_full: bool,
     pub storage_error: bool,

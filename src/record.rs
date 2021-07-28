@@ -4,17 +4,22 @@ use core::fmt::Write;
 use ds323x::{Datelike, NaiveDateTime, Timelike};
 use heapless::String;
 
-const STRING_CAP: usize = 64;
+// TODO - if these get big, put them in the bss section instead of on the stack
+const TIMESTAMP_STRING_CAP: usize = 32;
+const CSV_LINE_STRING_CAP: usize = TIMESTAMP_STRING_CAP + (4 * 16);
 
-// TODO - csv, serde stuff, maybe bincode but csv prefered
-// might be able to keep NaiveDateTime instead of string by importing chrono
-// with serde features
+#[derive(Debug, err_derive::Error)]
+pub enum Error {
+    #[error(display = "Could not format string")]
+    StringFormatting,
+}
+
 #[derive(Debug)]
 pub struct Record {
     /// ds323x::NaiveDateTime encoded as a ISO 8601 combined date and time
     /// (without timezone) string.
     /// YYYY-MM-DDThh:mm:ss
-    pub timestamp: String<STRING_CAP>,
+    pub timestamp: String<TIMESTAMP_STRING_CAP>,
 
     /// Temperature in degree fahrenheit (°F)
     pub temperature: f32,
@@ -26,12 +31,14 @@ pub struct Record {
     pub pressure: f32,
 
     /// Gas resistance, present if the valid bit is set on the BME689
+    /// If not valid, value 0 is used
     pub gas_resistance: Option<u32>,
 }
 
+// TODO - probably don't need to have intermediate state, just convert to csv
+// string
 impl Record {
-    // TODO - error type
-    pub fn new(datetime: &NaiveDateTime, data: &FieldData) -> Self {
+    pub fn new(datetime: &NaiveDateTime, data: &FieldData) -> Result<Self, Error> {
         let mut timestamp = String::new();
 
         let date = datetime.date();
@@ -46,9 +53,9 @@ impl Record {
             time.minute(),
             time.second(),
         )
-        .unwrap();
+        .map_err(|_| Error::StringFormatting)?;
 
-        Record {
+        Ok(Record {
             timestamp,
             temperature: util::celsius_to_fahrenheit(data.temperature_celsius()),
             humidity: data.humidity_percent(),
@@ -58,6 +65,21 @@ impl Record {
             } else {
                 None
             },
-        }
+        })
+    }
+
+    pub fn to_csv_line(&self) -> Result<String<CSV_LINE_STRING_CAP>, Error> {
+        let mut s = String::new();
+        write!(
+            &mut s,
+            "{},{},{},{},{}",
+            self.timestamp,
+            self.temperature,
+            self.humidity,
+            self.pressure,
+            self.gas_resistance.unwrap_or(0)
+        )
+        .map_err(|_| Error::StringFormatting)?;
+        Ok(s)
     }
 }

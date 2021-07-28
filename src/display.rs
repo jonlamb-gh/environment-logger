@@ -12,11 +12,12 @@ use embedded_graphics::{
 use heapless::String;
 use ssd1306::{mode::BufferedGraphicsMode, prelude::*, Ssd1306};
 
-// TODO update to 64 once new hw arrives
-type DispSize = DisplaySize128x32;
+type DispSize = DisplaySize128x64;
 
+const DATE_FONT: MonoFont<'_> = profont::PROFONT_24_POINT;
+const TIME_FONT: MonoFont<'_> = profont::PROFONT_24_POINT;
 const SENSOR_READING_FONT: MonoFont<'_> = profont::PROFONT_14_POINT;
-const DATETIME_FONT: MonoFont<'_> = profont::PROFONT_24_POINT;
+const SYS_STATS_FONT: MonoFont<'_> = profont::PROFONT_14_POINT;
 
 const LINE_BUF_CAP: usize = 64;
 
@@ -65,20 +66,20 @@ where
 
     fn draw_time(&mut self, time: &NaiveTime) -> Result<(), DisplayError> {
         let text_style = MonoTextStyleBuilder::new()
-            .font(&DATETIME_FONT)
+            .font(&TIME_FONT)
             .text_color(BinaryColor::On)
             .build();
-        let pos_y = (DisplaySize128x32::HEIGHT / 2) as i32;
+        let pos_y = (DispSize::HEIGHT / 2) as i32;
         let (_is_pm, hour) = time.hour12();
 
         self.drv.clear();
 
         self.line_buf.clear();
-        write!(&mut self.line_buf, " {:02}:{:02}", hour, time.minute(),)
+        write!(&mut self.line_buf, "{:02}:{:02}", hour, time.minute(),)
             .map_err(|_| DisplayError::InvalidFormatError)?;
         Text::with_baseline(
             self.line_buf.as_str(),
-            Point::new(0, pos_y),
+            Point::new(24, pos_y),
             text_style,
             Baseline::Middle,
         )
@@ -91,27 +92,37 @@ where
 
     fn draw_date(&mut self, date: &NaiveDate) -> Result<(), DisplayError> {
         let text_style = MonoTextStyleBuilder::new()
-            .font(&DATETIME_FONT)
+            .font(&DATE_FONT)
             .text_color(BinaryColor::On)
             .build();
-        let pos_y = (DisplaySize128x32::HEIGHT / 2) as i32;
+        let mid = (DispSize::HEIGHT / 2) as i32;
 
         self.drv.clear();
 
         self.line_buf.clear();
         write!(
             &mut self.line_buf,
-            " {:02} {} {}",
+            " {:02} {}",
             date.day(),
             MONTHS[date.month0().clamp(0, 11) as usize],
-            date.year(),
         )
         .map_err(|_| DisplayError::InvalidFormatError)?;
         Text::with_baseline(
             self.line_buf.as_str(),
-            Point::new(0, pos_y),
+            Point::zero(),
             text_style,
-            Baseline::Middle,
+            Baseline::Top,
+        )
+        .draw(&mut self.drv)?;
+
+        self.line_buf.clear();
+        write!(&mut self.line_buf, "  {}", date.year())
+            .map_err(|_| DisplayError::InvalidFormatError)?;
+        Text::with_baseline(
+            self.line_buf.as_str(),
+            Point::new(0, mid),
+            text_style,
+            Baseline::Top,
         )
         .draw(&mut self.drv)?;
 
@@ -123,18 +134,23 @@ where
     fn draw_sensor_readings(&mut self, data: &bme680::FieldData) -> Result<(), DisplayError> {
         let temp = util::celsius_to_fahrenheit(data.temperature_celsius()).clamp(0.0, 99.0);
         let humid = data.humidity_percent().clamp(0.0, 99.0);
+        let pressure = data.pressure_hpa();
+        let gas = if data.gas_valid() {
+            data.gas_resistance_ohm()
+        } else {
+            0
+        };
 
+        let dh = (DispSize::HEIGHT / 4) as i32;
         let text_style = MonoTextStyleBuilder::new()
             .font(&SENSOR_READING_FONT)
             .text_color(BinaryColor::On)
             .build();
-        let pos_y =
-            DisplaySize128x32::HEIGHT as i32 - SENSOR_READING_FONT.character_size.height as i32;
 
         self.drv.clear();
 
         self.line_buf.clear();
-        write!(&mut self.line_buf, "Temp   {:02.0} F", temp)
+        write!(&mut self.line_buf, "Temp     {:02.0} F", temp)
             .map_err(|_| DisplayError::InvalidFormatError)?;
         Text::with_baseline(
             self.line_buf.as_str(),
@@ -145,11 +161,33 @@ where
         .draw(&mut self.drv)?;
 
         self.line_buf.clear();
-        write!(&mut self.line_buf, "Humid  {:02.0} %", humid)
+        write!(&mut self.line_buf, "Humidity {:02.0} %", humid)
             .map_err(|_| DisplayError::InvalidFormatError)?;
         Text::with_baseline(
             self.line_buf.as_str(),
-            Point::new(0, pos_y),
+            Point::new(0, dh),
+            text_style,
+            Baseline::Top,
+        )
+        .draw(&mut self.drv)?;
+
+        self.line_buf.clear();
+        write!(&mut self.line_buf, "Pressure {:04.0}", pressure)
+            .map_err(|_| DisplayError::InvalidFormatError)?;
+        Text::with_baseline(
+            self.line_buf.as_str(),
+            Point::new(0, 2 * dh),
+            text_style,
+            Baseline::Top,
+        )
+        .draw(&mut self.drv)?;
+
+        self.line_buf.clear();
+        write!(&mut self.line_buf, "Gas    {:06.0}", gas)
+            .map_err(|_| DisplayError::InvalidFormatError)?;
+        Text::with_baseline(
+            self.line_buf.as_str(),
+            Point::new(0, 3 * dh),
             text_style,
             Baseline::Top,
         )
@@ -161,21 +199,21 @@ where
     }
 
     fn draw_system_status(&mut self, data: &SystemStatus) -> Result<(), DisplayError> {
-        // TODO
-        // need to clamp some, like uptime
-
+        let dh = (DispSize::HEIGHT / 4) as i32;
         let text_style = MonoTextStyleBuilder::new()
-            .font(&SENSOR_READING_FONT)
+            .font(&SYS_STATS_FONT)
             .text_color(BinaryColor::On)
             .build();
-        let pos_y =
-            DisplaySize128x32::HEIGHT as i32 - SENSOR_READING_FONT.character_size.height as i32;
 
         self.drv.clear();
 
         self.line_buf.clear();
-        write!(&mut self.line_buf, "Uptime {}", data.uptime_sec)
-            .map_err(|_| DisplayError::InvalidFormatError)?;
+        write!(
+            &mut self.line_buf,
+            "UT {}",
+            data.uptime_sec.clamp(0, 999999999)
+        )
+        .map_err(|_| DisplayError::InvalidFormatError)?;
         Text::with_baseline(
             self.line_buf.as_str(),
             Point::zero(),
@@ -187,13 +225,45 @@ where
         self.line_buf.clear();
         write!(
             &mut self.line_buf,
-            "Alarm  {}",
-            if data.alarm_on { "ON" } else { "OFF" }
+            "CNT {}",
+            data.records_since_boot.clamp(0, 99999999)
         )
         .map_err(|_| DisplayError::InvalidFormatError)?;
         Text::with_baseline(
             self.line_buf.as_str(),
-            Point::new(0, pos_y),
+            Point::new(0, dh),
+            text_style,
+            Baseline::Top,
+        )
+        .draw(&mut self.drv)?;
+
+        self.line_buf.clear();
+        write!(
+            &mut self.line_buf,
+            "ALRM {}  CON {}",
+            data.alarm,
+            util::DisplayBool::from(data.storage_connected)
+        )
+        .map_err(|_| DisplayError::InvalidFormatError)?;
+        Text::with_baseline(
+            self.line_buf.as_str(),
+            Point::new(0, 2 * dh),
+            text_style,
+            Baseline::Top,
+        )
+        .draw(&mut self.drv)?;
+
+        self.line_buf.clear();
+        write!(
+            &mut self.line_buf,
+            "FULL {}  ERR {}",
+            util::DisplayBool::from(data.storage_full),
+            util::DisplayBool::from(data.storage_error)
+        )
+        .map_err(|_| DisplayError::InvalidFormatError)?;
+        Text::with_baseline(
+            self.line_buf.as_str(),
+            Point::new(0, 3 * dh),
             text_style,
             Baseline::Top,
         )

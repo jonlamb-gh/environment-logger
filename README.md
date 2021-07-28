@@ -19,11 +19,14 @@ cargo install cargo-flash probe-run
 * [Adafruit Micro SD Card Breakout Board](https://www.adafruit.com/product/4682)
 * [Adafruit DS3231 RTC](https://www.adafruit.com/product/3013)
 * [Piezo buzzer, 5 kHz square wave](https://www.amazon.com/gp/product/B085XQM69Z/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1)
+* [AMS1117-3.3 Regulator](https://www.amazon.com/gp/product/B07CP4P5XJ/ref=ppx_yo_dt_b_asin_title_o00_s00?ie=UTF8&psc=1)
 
 ### Pins
 
 | Description       | GPIO  | AF    |
 | :---              | :--:  | :--:  |
+| On-board LED      | PC13  | DOUT  |
+| On-board Button   | PA0   | DIN   |
 | SSD1306 I2C       | PB6   | SCL1  |
 | SSD1306 I2C       | PB7   | SDA1  |
 | BME680 I2C        | PB10  | SCL2  |

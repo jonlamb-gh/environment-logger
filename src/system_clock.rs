@@ -5,10 +5,8 @@ use embedded_time::{clock, fraction::Fraction, Clock, Instant};
 
 /// 32-bit second clock
 #[derive(Debug)]
+#[repr(transparent)]
 pub struct SystemClock(AtomicU32);
-
-unsafe impl Send for SystemClock {}
-unsafe impl Sync for SystemClock {}
 
 impl SystemClock {
     pub const fn new() -> Self {

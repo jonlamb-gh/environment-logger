@@ -41,11 +41,16 @@ impl ViewModeSwitcher {
         }
     }
 
+    pub fn set_mode(&mut self, mode: ViewMode, now: &Instant<SystemClock>) {
+        self.mode = mode;
+        self.last_transition = *now;
+    }
+
     pub fn mode(&mut self, now: &Instant<SystemClock>) -> ViewMode {
         if let Some(dur) = now.checked_duration_since(&self.last_transition) {
             if dur >= VIEW_DURATION.into() {
-                self.mode = self.mode.next();
                 self.last_transition = *now;
+                self.mode = self.mode.next();
             }
         }
         self.mode
