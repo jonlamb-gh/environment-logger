@@ -117,7 +117,7 @@ fn do_main() -> Result<(), Error> {
     // PB4, SDA3
     let rtc_scl = gpioa.pa8.into_alternate().set_open_drain();
     let rtc_sda = gpiob.pb4.into_alternate().set_open_drain();
-    let rtc_i2c = I2c::new(dp.I2C3, (rtc_scl, rtc_sda), 400.khz(), clocks);
+    let rtc_i2c = I2c::new(dp.I2C3, (rtc_scl, rtc_sda), 100.khz(), clocks);
     let mut rtc = Rtc::new(rtc_i2c)?;
 
     // I2C2, BME680 sensor
@@ -125,7 +125,7 @@ fn do_main() -> Result<(), Error> {
     // PB3, SDA2
     let bme_scl = gpiob.pb10.into_alternate().set_open_drain();
     let bme_sda = gpiob.pb3.into_alternate().set_open_drain();
-    let bme_i2c = I2c::new(dp.I2C2, (bme_scl, bme_sda), 400.khz(), clocks);
+    let bme_i2c = I2c::new(dp.I2C2, (bme_scl, bme_sda), 100.khz(), clocks);
     let mut sensor = Sensor::new(bme_i2c, &SYS_CLOCK.now(), &mut delay)?;
 
     SYS_CLOCK.enable_systick_interrupt(cp.SYST, &clocks);
