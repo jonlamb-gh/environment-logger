@@ -68,6 +68,7 @@ impl Record {
         })
     }
 
+    // TODO - maybe newline here
     pub fn to_csv_line(&self) -> Result<String<CSV_LINE_STRING_CAP>, Error> {
         let mut s = String::new();
         write!(

@@ -15,9 +15,7 @@ embedded-graphics = "0.7"
 profont = "0.5"
 ssd1306 = "0.7"
 display-interface = "0.4"
-# TODO just so I can forge a FieldData struct until I get the hw
-#bme680 = "0.6"
-bme680 = { path = "/tmp/bme680" }
+bme680 = "0.6"
 embedded-sdmmc = "0.3"
 ds323x = "0.4"
 

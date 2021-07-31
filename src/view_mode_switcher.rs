@@ -41,6 +41,11 @@ impl ViewModeSwitcher {
         }
     }
 
+    pub fn skip(&mut self, now: &Instant<SystemClock>) {
+        self.last_transition = *now;
+        self.mode = self.mode.next();
+    }
+
     pub fn set_mode(&mut self, mode: ViewMode, now: &Instant<SystemClock>) {
         self.mode = mode;
         self.last_transition = *now;

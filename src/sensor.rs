@@ -9,6 +9,17 @@ use embedded_time::{duration::Seconds, Instant};
 
 const POLLING_INTERVAL: Seconds = Seconds(15_u32);
 
+// stm32f4xx Timer only impls Delay<u16>, bme680 wants Delay<u8>
+pub struct DelayWrapper<D: DelayMs<u16>> {
+    pub delay: D,
+}
+
+impl<D: DelayMs<u16>> DelayMs<u8> for DelayWrapper<D> {
+    fn delay_ms(&mut self, ms: u8) {
+        self.delay.delay_ms(ms as _);
+    }
+}
+
 pub struct Sensor<I2C, D> {
     drv: Bme680<I2C, D>,
     last_polled: Instant<SystemClock>,
@@ -24,7 +35,7 @@ where
         now: &Instant<SystemClock>,
         delay: &mut D,
     ) -> Result<Self, Error<<I2C as Read>::Error, <I2C as Write>::Error>> {
-        let mut drv = Bme680::init(i2c, delay, I2CAddress::Primary)?;
+        let mut drv = Bme680::init(i2c, delay, I2CAddress::Secondary)?;
         let settings = SettingsBuilder::new()
             .with_humidity_oversampling(OversamplingSetting::OS2x)
             .with_pressure_oversampling(OversamplingSetting::OS4x)
@@ -50,6 +61,7 @@ where
         if let Some(dur) = now.checked_duration_since(&self.last_polled) {
             if dur >= POLLING_INTERVAL.into() {
                 self.last_polled = *now;
+                self.drv.set_sensor_mode(delay, PowerMode::ForcedMode)?;
                 let (data, state) = self.drv.get_sensor_data(delay)?;
                 if state == FieldDataCondition::NewData {
                     return Ok(Some(data));

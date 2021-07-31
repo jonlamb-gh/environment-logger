@@ -22,6 +22,7 @@ use crate::hal::{
     watchdog::IndependentWatchdog,
 };
 use crate::rtc::Rtc;
+use crate::sensor::{DelayWrapper, Sensor};
 use crate::system_clock::SystemClock;
 use crate::system_status::SystemStatus;
 use crate::view_mode_switcher::{ViewMode, ViewModeSwitcher};
@@ -29,14 +30,13 @@ use core::cell::RefCell;
 use core::ops::DerefMut;
 use cortex_m::interrupt::{free, Mutex};
 use cortex_m_rt::{entry, exception, ExceptionFrame};
-use ds323x::{NaiveDate, NaiveDateTime};
 use ssd1306::I2CDisplayInterface;
 
 mod alarm;
 mod atomic_button_state;
 mod display;
 mod error;
-mod fs;
+mod file_system;
 mod record;
 mod rtc;
 mod sensor;
@@ -87,12 +87,21 @@ fn do_main() -> Result<(), Error> {
     btn.trigger_on_edge(&mut dp.EXTI, Edge::Falling);
 
     // General purpose delay timer from TIM5
-    let mut delay = Delay::tim5(dp.TIM5, &clocks);
+    let delay = Delay::tim5(dp.TIM5, &clocks);
+    let mut delay = DelayWrapper { delay };
 
     // Alarm buzzer, PA10, PWM on T1_CH3
     let pwm_channels = gpioa.pa10.into_alternate();
     let buzzer = Timer::new(dp.TIM1, &clocks).pwm(pwm_channels, 5_u32.khz());
     let mut alarm = Alarm::new(buzzer);
+
+    // Short beep on power up
+    led.set_low();
+    alarm.set_on_off(true);
+    delay.delay_ms(200_u8);
+    alarm.set_on_off(false);
+    led.set_high();
+    alarm.set_monitoring(true);
 
     // I2C1, SSD1306 display
     // PB6, SCL1
@@ -111,16 +120,16 @@ fn do_main() -> Result<(), Error> {
     let rtc_i2c = I2c::new(dp.I2C3, (rtc_scl, rtc_sda), 400.khz(), clocks);
     let mut rtc = Rtc::new(rtc_i2c)?;
 
+    // I2C2, BME680 sensor
+    // PB10, SCL2
+    // PB3, SDA2
+    let bme_scl = gpiob.pb10.into_alternate().set_open_drain();
+    let bme_sda = gpiob.pb3.into_alternate().set_open_drain();
+    let bme_i2c = I2c::new(dp.I2C2, (bme_scl, bme_sda), 400.khz(), clocks);
+    let mut sensor = Sensor::new(bme_i2c, &SYS_CLOCK.now(), &mut delay)?;
+
     SYS_CLOCK.enable_systick_interrupt(cp.SYST, &clocks);
     watchdog.feed();
-
-    // Short beep on power up
-    led.set_low();
-    alarm.set_on_off(true);
-    delay.delay_ms(200_u32);
-    alarm.set_on_off(false);
-    led.set_high();
-    alarm.set_monitoring(true);
 
     let mut status = SystemStatus::default();
     let mut view_mode_switcher = ViewModeSwitcher::new(SYS_CLOCK.now());
@@ -136,25 +145,9 @@ fn do_main() -> Result<(), Error> {
     };
 
     // TODO
-    // add an optional error/warn display page for EOF/IO error, etc
-    // draw a small SD icon on the display if SD card is present
-    //   - just do polling on this GPIO for state change
-    //
-    // - if/while the alarm is on, only show ViewMode::SensorReadings or shorten the
-    //   rotation period to 1s
-    //
-    // - use the on-board button to turn alarm on/off (not persistent, maybe put a
-    //   word in flash for it)
+    // int/polling for SD detect pin state change
 
-    let mut forged_sensor_data = bme680::FieldData {
-        status: 0xFF,
-        gas_index: 0,
-        meas_index: 0,
-        temperature: 0,
-        pressure: 0,
-        humidity: 0,
-        gas_resistance: 0,
-    };
+    let mut sensor_data = None;
 
     loop {
         cortex_m::asm::wfi();
@@ -171,14 +164,15 @@ fn do_main() -> Result<(), Error> {
             view_mode_switcher.set_mode(ViewMode::SystemStatus, &now);
         }
 
-        // TODO - replace with read here, based on time, max 1s interval
-        // probably need a warm-up interval before alarm monitoring
-        forged_sensor_data.temperature = forged_sensor_data.temperature.wrapping_add(8);
-        forged_sensor_data.humidity = forged_sensor_data.humidity.wrapping_add(1005);
+        // TODO - warm-up period before alarm monitoring
+        if let Some(new_sensor_data) = sensor.poll(&now, &mut delay)? {
+            alarm.check_temperature_f(util::celsius_to_fahrenheit(
+                new_sensor_data.temperature_celsius(),
+            ));
 
-        alarm.check_temperature_f(util::celsius_to_fahrenheit(
-            forged_sensor_data.temperature_celsius(),
-        ));
+            sensor_data.replace(new_sensor_data);
+        }
+
         status.alarm = alarm.status();
 
         let view_mode = view_mode_switcher.mode(&now);
@@ -190,9 +184,11 @@ fn do_main() -> Result<(), Error> {
                 display.draw_view(View::Date { data: &dt.date() })?;
             }
             ViewMode::SensorReadings => {
-                display.draw_view(View::SensorReadings {
-                    data: &forged_sensor_data,
-                })?;
+                if let Some(sensor_data) = &sensor_data {
+                    display.draw_view(View::SensorReadings { data: &sensor_data })?;
+                } else {
+                    view_mode_switcher.skip(&now);
+                }
             }
             ViewMode::SystemStatus => {
                 display.draw_view(View::SystemStatus { data: &status })?;
