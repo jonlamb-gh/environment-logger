@@ -1,6 +1,18 @@
 # environment-logger
 
-Displays and optionally logs data from a BME680 sensor to an SD card.
+Displays and optionally logs data from a BME680 sensor to an SD card, housed in a solid block of Cherry wood.
+
+![sensor_readings.jpg](images/sensor_readings.jpg)
+
+![under.jpg](images/under.jpg)
+
+## Plotting
+
+```bash
+./plotter/plot-records /path/to/RECORDS.CSV
+```
+
+![env_logger_plots.png](images/env_logger_plots.png)
 
 ## Dependencies
 
