@@ -42,7 +42,7 @@ where
             .with_temperature_oversampling(OversamplingSetting::OS8x)
             .with_temperature_filter(IIRFilterSize::Size3)
             .with_gas_measurement(core::time::Duration::from_millis(1500), 320, 25)
-            .with_temperature_offset(0.0)
+            .with_temperature_offset(-0.56)
             .with_run_gas(true)
             .build();
         drv.set_sensor_settings(delay, settings)?;
