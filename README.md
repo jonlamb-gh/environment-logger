@@ -27,6 +27,7 @@ cargo install cargo-flash probe-run
 | :---              | :--:  | :--:  |
 | On-board LED      | PC13  | DOUT  |
 | On-board Button   | PA0   | DIN   |
+| Debug serial out  | PA2   | TX2   |
 | SSD1306 I2C       | PB6   | SCL1  |
 | SSD1306 I2C       | PB7   | SDA1  |
 | BME680 I2C        | PB10  | SCL2  |

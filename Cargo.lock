@@ -236,6 +236,7 @@ name = "environment-logger"
 version = "0.1.0"
 dependencies = [
  "bme680",
+ "chrono",
  "cortex-m",
  "cortex-m-rt",
  "display-interface",

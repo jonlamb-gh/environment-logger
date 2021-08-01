@@ -1,5 +1,6 @@
 use crate::hal::hal::PwmPin;
 use core::fmt;
+use embedded_time::duration::Minutes;
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub enum AlarmStatus {
@@ -31,6 +32,11 @@ pub struct Alarm<PWM> {
     pwm: PWM,
     monitoring: bool,
     on: bool,
+}
+
+impl<Whatev> Alarm<Whatev> {
+    /// Wait this much time before monitoring the alarm (if monitoring enabled)
+    pub const WARM_UP_DELAY: Minutes = Minutes(10);
 }
 
 impl<PWM> Alarm<PWM>

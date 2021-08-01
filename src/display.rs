@@ -55,7 +55,7 @@ where
         })
     }
 
-    pub fn draw_view<'a>(&mut self, view: View) -> Result<(), DisplayError> {
+    pub fn draw_view(&mut self, view: View) -> Result<(), DisplayError> {
         match view {
             View::Time { data } => self.draw_time(data),
             View::Date { data } => self.draw_date(data),
@@ -226,7 +226,7 @@ where
         write!(
             &mut self.line_buf,
             "CNT {}",
-            data.records_since_boot.clamp(0, 99999999)
+            data.record_count.clamp(0, 99999999)
         )
         .map_err(|_| DisplayError::InvalidFormatError)?;
         Text::with_baseline(

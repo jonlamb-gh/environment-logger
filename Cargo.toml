@@ -19,6 +19,10 @@ bme680 = "0.6"
 embedded-sdmmc = "0.3"
 ds323x = "0.4"
 
+[dependencies.chrono]
+version = "0.4"
+default-features = false
+
 [dependencies.stm32f4xx-hal]
 # Using master branch to get 0.10 features
 #version = "0.9"

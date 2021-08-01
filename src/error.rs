@@ -1,8 +1,7 @@
 //! Top level error
 
-use crate::hal::i2c;
+use crate::hal::{i2c, serial};
 use crate::record;
-use display_interface::DisplayError;
 
 #[derive(Debug, err_derive::Error)]
 pub enum Error {
@@ -13,7 +12,7 @@ pub enum Error {
     TakeCorePeripherals,
 
     #[error(display = "Display error")]
-    Display(#[error(source)] DisplayError),
+    Display(#[error(source)] display_interface::DisplayError),
 
     #[error(display = "RTC error")]
     Rtc(#[error(source)] ds323x::Error<i2c::Error, ()>),
@@ -23,4 +22,13 @@ pub enum Error {
 
     #[error(display = "Record error")]
     Record(#[error(source)] record::Error),
+
+    #[error(display = "File system error")]
+    FileSystem(#[error(source)] embedded_sdmmc::Error<embedded_sdmmc::SdMmcError>),
+
+    #[error(display = "SerialConfig error")]
+    SerialConfig(#[error(source)] serial::config::InvalidConfig),
+
+    #[error(display = "Formatting error")]
+    Formatting(#[error(source)] core::fmt::Error),
 }

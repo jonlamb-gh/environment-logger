@@ -1,11 +1,5 @@
-// TODO
-// Mode::ReadWriteCreateOrAppend
-
 use crate::hal::hal::{digital::v2::OutputPin, spi::FullDuplex};
-use embedded_sdmmc::{
-    Block, BlockCount, BlockDevice, BlockIdx, Controller, Error, Mode, SdMmcError, SdMmcSpi,
-    TimeSource, Timestamp, VolumeIdx,
-};
+use embedded_sdmmc::{Controller, Error, Mode, SdMmcError, SdMmcSpi, TimeSource, VolumeIdx};
 
 const VOLUME_IDX: VolumeIdx = VolumeIdx(0);
 const FILENAME: &str = "records.txt";
@@ -38,28 +32,39 @@ where
 
     /// Call this when card is connected
     pub fn init(&mut self) -> Result<(), Error<SdMmcError>> {
-        let dev = self.ctrl.device();
-        dev.init().map_err(|e| Error::DeviceError(e))?;
-        let card_size_bytes = dev.card_size_bytes().map_err(|e| Error::DeviceError(e))?;
-        self.data.replace(InitializedStateData { card_size_bytes });
+        if self.data.is_none() {
+            let dev = self.ctrl.device();
+            dev.init().map_err(Error::DeviceError)?;
+            let card_size_bytes = dev.card_size_bytes().map_err(Error::DeviceError)?;
+            self.data.replace(InitializedStateData { card_size_bytes });
+        }
         Ok(())
     }
 
     /// Call this when card is disconnected
     pub fn deinit(&mut self) {
-        let dev = self.ctrl.device();
-        dev.deinit();
+        if let Some(_data) = self.data.take() {
+            let dev = self.ctrl.device();
+            dev.deinit();
+        }
     }
 
-    // option/result, may not have been init'd
-    pub fn is_full(&mut self) -> bool {
-        // if file exists, check the DirEntry.size minus a block size or something
-        todo!()
+    pub fn is_init(&self) -> bool {
+        self.data.is_some()
+    }
+
+    pub fn write(&mut self, buffer: &[u8]) -> Result<(), Error<SdMmcError>> {
+        let mut volume = self.ctrl.get_volume(VOLUME_IDX)?;
+        let root_dir = self.ctrl.open_root_dir(&volume)?;
+        let mut file = self.ctrl.open_file_in_dir(
+            &mut volume,
+            &root_dir,
+            FILENAME,
+            Mode::ReadWriteCreateOrAppend,
+        )?;
+        self.ctrl.write(&mut volume, &mut file, buffer)?;
+        self.ctrl.close_file(&volume, file)?;
+        self.ctrl.close_dir(&volume, root_dir);
+        Ok(())
     }
 }
-
-// https://github.com/rust-embedded-community/embedded-sdmmc-rs/blob/develop/examples/create_test.rs
-
-// TODO
-// https://docs.rs/embedded-sdmmc/0.3.0/embedded_sdmmc/struct.DirEntry.html#structfield.size
-// check if file exist, if so, see if the card is full
