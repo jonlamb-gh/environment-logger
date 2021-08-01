@@ -1,4 +1,6 @@
 use crate::hal::hal::PwmPin;
+use crate::util;
+use bme680::FieldData;
 use core::fmt;
 use embedded_time::duration::Minutes;
 
@@ -88,9 +90,14 @@ where
         }
     }
 
-    pub fn check_temperature_f(&mut self, temp_f: f32) {
-        if self.monitoring && (temp_f < Self::TEMP_F_MIN) || (temp_f > Self::TEMP_F_MAX) {
-            self.set_on_off(true);
+    pub fn check_temperature(&mut self, data: &FieldData) {
+        if self.monitoring {
+            let temp_f = util::celsius_to_fahrenheit(data.temperature_celsius());
+            if !(Self::TEMP_F_MIN..=Self::TEMP_F_MAX).contains(&temp_f) {
+                self.set_on_off(true);
+            } else {
+                self.set_on_off(false)
+            }
         } else {
             self.set_on_off(false)
         }

@@ -1,5 +1,4 @@
-// TODO
-//#![deny(unsafe_code, warnings, clippy::all)]
+#![deny(warnings, clippy::all)]
 #![no_main]
 #![no_std]
 
@@ -239,9 +238,7 @@ fn do_main() -> Result<(), Error> {
             }
 
             if status.alarm_warmed_up {
-                alarm.check_temperature_f(util::celsius_to_fahrenheit(
-                    new_sensor_data.temperature_celsius(),
-                ));
+                alarm.check_temperature(&new_sensor_data);
             }
 
             if fs.is_init() {
