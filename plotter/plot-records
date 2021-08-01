@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+
+import sys
+import pandas as pd
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
+csv_file = sys.argv[1]
+print('Reading {}'.format(csv_file))
+
+columns = ['date', 'temperature', 'humidity', 'pressure', 'gas resistance']
+df = pd.read_csv(csv_file, names=columns);
+
+fig = make_subplots(
+    rows=2, cols=2,
+    shared_xaxes=True,
+    start_cell="top-left",
+    subplot_titles=('Temperature °F', 'Pressure hPA', 'Relative Humidity %', 'Gas Resistance Ω')
+)
+
+f = fig.add_trace(
+    go.Scattergl(name='temperature', x=df['date'], y=df['temperature']),
+    row=1, col=1
+)
+# Alarm temp [66.0, 74.0]
+#f.add_hline(y=66.0, line_color='red', line_width=3, line_dash='dot', annotation_text='TEMP MIN')
+#f.add_hline(y=74.0, line_color='red', line_width=3, line_dash='dot', annotation_text='TEMP MAX')
+
+fig.add_trace(
+    go.Scattergl(name='humidity', x=df['date'], y=df['humidity']),
+    row=2, col=1
+)
+
+fig.add_trace(
+    go.Scattergl(name='pressure', x=df['date'], y=df['pressure']),
+    row=1, col=2
+)
+
+fig.add_trace(
+    go.Scattergl(name='gas resistance', x=df['date'], y=df['gas resistance']),
+    row=2, col=2
+)
+
+fig.update_layout(title_text='Environment Logger')
+
+fig.show()

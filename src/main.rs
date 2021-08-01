@@ -118,6 +118,7 @@ fn do_main() -> Result<(), Error> {
         SerialConfig::default().baudrate(115200.bps()),
         clocks,
     )?;
+    writeln!(stdout, "---------------------------")?;
     writeln!(stdout, "Starting")?;
 
     // I2C1, SSD1306 display
@@ -198,7 +199,7 @@ fn do_main() -> Result<(), Error> {
         if sd_det.is_high() {
             // SD connected
             if !status.storage_error && !fs.is_init() {
-                match fs.init() {
+                match fs.init(&now) {
                     Ok(()) => writeln!(stdout, "Storage init")?,
                     Err(e) => {
                         status.storage_error = true;
@@ -225,33 +226,33 @@ fn do_main() -> Result<(), Error> {
             view_mode_switcher.set_mode(ViewMode::SystemStatus, &now);
         }
 
-        // TODO - warm-up period before alarm monitoring
         let dt = rtc.get_datetime()?;
         if let Some(new_sensor_data) = sensor.poll(&now, &mut delay)? {
             // Check the alarm if monitoring and warm-up period has elapsed
-            if let Some(time_since_boot) = now.checked_duration_since(&boot_time_sec) {
-                if time_since_boot >= Alarm::<usize>::WARM_UP_DELAY.into() {
-                    if !status.alarm_warmed_up {
+            if !status.alarm_warmed_up {
+                if let Some(time_since_boot) = now.checked_duration_since(&boot_time_sec) {
+                    if time_since_boot >= Alarm::<usize>::WARM_UP_DELAY.into() {
                         status.alarm_warmed_up = true;
-                        writeln!(stdout, "Alarm warmed up")?;
+                        writeln!(stdout, "Alarm warmed up {}", dt)?;
                     }
-
-                    alarm.check_temperature_f(util::celsius_to_fahrenheit(
-                        new_sensor_data.temperature_celsius(),
-                    ));
                 }
             }
 
-            // TODO - testing, move this to time interval
-            // try to re-init if err
-            // check for is-full error variant
+            if status.alarm_warmed_up {
+                alarm.check_temperature_f(util::celsius_to_fahrenheit(
+                    new_sensor_data.temperature_celsius(),
+                ));
+            }
+
             if fs.is_init() {
                 let record = Record::new(&dt, &new_sensor_data)?;
                 let csv_line = record.to_csv_line()?;
 
-                match fs.write(csv_line.as_bytes()) {
-                    Ok(()) => {
-                        status.inc_records();
+                match fs.write(&now, csv_line.as_bytes()) {
+                    Ok(did_write) => {
+                        if did_write {
+                            status.inc_records();
+                        }
                     }
                     Err(e) => {
                         status.storage_error = true;

@@ -3,6 +3,7 @@ name = "environment-logger"
 version = "0.1.0"
 edition = "2018"
 authors = ["Jon Lamb"]
+exclude = ["plotter"]
 
 [dependencies]
 cortex-m = "0.7"
@@ -27,7 +28,7 @@ default-features = false
 # Using master branch to get 0.10 features
 #version = "0.9"
 git = "https://github.com/stm32-rs/stm32f4xx-hal.git"
-ref = "9bbdac81025292de2a1ba02ca3e60cbedcb70c8c"
+rev = "9bbdac81025292de2a1ba02ca3e60cbedcb70c8c"
 features = ["rt", "stm32f411"]
 
 [dependencies.err-derive]
