@@ -34,6 +34,7 @@ pub enum View<'a> {
 
 pub struct Display<DI> {
     drv: Ssd1306<DI, DispSize, BufferedGraphicsMode<DispSize>>,
+    brightness: Brightness,
     line_buf: String<LINE_BUF_CAP>,
 }
 
@@ -42,17 +43,36 @@ where
     DI: WriteOnlyDataCommand,
 {
     pub fn new(di: DI) -> Result<Self, DisplayError> {
+        let brightness = Brightness::BRIGHTEST;
         let mut drv =
             Ssd1306::new(di, DispSize {}, DisplayRotation::Rotate0).into_buffered_graphics_mode();
         drv.init()?;
         drv.set_display_on(true)?;
         drv.clear();
         drv.flush()?;
-        drv.set_brightness(Brightness::BRIGHTEST)?;
+        drv.set_brightness(brightness)?;
         Ok(Display {
             drv,
+            brightness,
             line_buf: String::new(),
         })
+    }
+
+    /// 8 PM ..= 8 AM => Brightness::DIMMEST, else Brightness::BRIGHTEST
+    pub fn update_brightness(&mut self, time: &NaiveTime) -> Result<(), DisplayError> {
+        let hr24 = time.hour();
+        let range0 = 20..=23;
+        let range1 = 0..=7;
+        let brightness = if range0.contains(&hr24) || range1.contains(&hr24) {
+            Brightness::DIMMEST
+        } else {
+            Brightness::BRIGHTEST
+        };
+        if brightness != self.brightness {
+            self.drv.set_brightness(brightness)?;
+            self.brightness = brightness;
+        }
+        Ok(())
     }
 
     pub fn draw_view(&mut self, view: View) -> Result<(), DisplayError> {

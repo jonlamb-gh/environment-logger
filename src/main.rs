@@ -267,6 +267,8 @@ fn do_main() -> Result<(), Error> {
         status.alarm = alarm.status();
         status.uptime_sec = SYS_CLOCK.get_raw();
 
+        display.update_brightness(&dt.time())?;
+
         let view_mode = view_mode_switcher.mode(&now);
         match view_mode {
             ViewMode::Time => {
