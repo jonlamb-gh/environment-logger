@@ -16,8 +16,15 @@ Displays and optionally logs data from a BME680 sensor to an SD card, housed in 
 
 ## Dependencies
 
+* [cargo-embed](https://github.com/probe-rs/cargo-embed)
 ```bash
-cargo install cargo-flash probe-run
+cargo install cargo-embed
+```
+
+## Build and Upload
+
+```bash
+cargo embed --release
 ```
 
 ## Hardware
